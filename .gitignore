@@ -1,0 +1,5 @@
+__pycache__
+config.json
+timestamp.json
+# Ignore dynaconf secret files
+.secrets.*

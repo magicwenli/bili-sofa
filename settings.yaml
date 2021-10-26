@@ -1,0 +1,12 @@
+- callback: cb1
+  interval: 60
+  last_update: 0
+  mid: '8372874'
+  reply: '2128809385'
+  type: video
+- callback: cb1
+  interval: 60
+  last_update: 0
+  mid: '693737'
+  reply: '2128809385'
+  type: dynamic
