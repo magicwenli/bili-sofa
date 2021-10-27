@@ -11,7 +11,7 @@ DEBUGMODE = False
 
 async def startTask(task: ObTask):
     while start_flag:
-        sleep_seconds = random.randint(0, task.interval)
+        sleep_seconds = random.randint(10, task.interval)
         if task.type == "video":
             type_ = comment.ResourceType.VIDEO
             info = await loadVideos(task.user)
@@ -20,8 +20,9 @@ async def startTask(task: ObTask):
             type_ = comment.ResourceType.DYNAMIC
             info = await loadDynamics(task.user)
             await checkSendReply(info, task, type_)
-
+        logger.info("{}: sleep {} seconds.".format(task.tid,sleep_seconds))
         await asyncio.sleep(sleep_seconds)
+        # return
         # return "{}: task {} wait {} s.".format(datetime.now(), task.mid, task.interval)
 
 
@@ -81,7 +82,7 @@ async def loadDynamics(user: user.User):
             content = dynamic["card"]["item"]["description"]
         else:
             content = dynamic["card"]["item"]["content"]
-        uname = dynamic["card"]["user"]["uname"]
+        uname = dynamic["card"]["user"]["name"]
         return Info(did, timestamp, content, uname=uname)
 
     else:
@@ -94,6 +95,7 @@ if __name__ == "__main__":
     obts = ObTasks()
     tasks = [asyncio.ensure_future(startTask(obt)) for obt in obts.tasks]
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.wait(tasks))
+    loop.run_forever()
+    loop.close()
     # for task in tasks:
     #     print('Task ret: ', task.result())
