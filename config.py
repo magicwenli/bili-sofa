@@ -1,4 +1,5 @@
 from datetime import datetime
+import wxpusher
 import yaml
 from wxpusher import WxPusher
 from bilibili_api import Credential
@@ -30,7 +31,10 @@ class Pusher:
 
     def push(self, content):
         logger.info(content)
-        WxPusher.send_message(content, **self.config)
+        try:
+            WxPusher.send_message(content, **self.config)
+        except wxpusher.exceptions.WxPusherNoneTokenException:
+            logger.info("WxPusher Token empty, pass pushing.")
 
 
 class Setting:

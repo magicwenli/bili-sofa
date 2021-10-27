@@ -11,7 +11,7 @@ class ObTask:
         self.tid = tid
         self.mid = mid
         self.type = type
-        if callback is None:
+        if callback is None or callback=="":
             self.callback=None
             self.callback_str=""
         else:
