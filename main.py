@@ -1,71 +1,99 @@
 from obtask import ObTasks, ObTask
 from info import Info
-from config import settings
+from config import Pusher, settings, replyTemplate
 from bilibili_api import comment, user
 from datetime import datetime
-import time
 import asyncio
+import random
+from log import logger
 
+DEBUGMODE = False
 
-async def loadDynamic(task: ObTask):
-    if task.type == "video":
-        type_ = comment.ResourceType.VIDEO
-        info = await loadVideos(task.user)
-        succss, message = await checkSendReply(info, task, type_)
-        if succss:
-            settings.wxpusher.push(message)
+async def startTask(task: ObTask):
+    while start_flag:
+        sleep_seconds = random.randint(0, task.interval)
+        if task.type == "video":
+            type_ = comment.ResourceType.VIDEO
+            info = await loadVideos(task.user)
+            await checkSendReply(info, task, type_)
+        elif task.type == "dynamic":
+            type_ = comment.ResourceType.DYNAMIC
+            info = await loadDynamics(task.user)
+            await checkSendReply(info, task, type_)
+
+        await asyncio.sleep(sleep_seconds)
+        # return "{}: task {} wait {} s.".format(datetime.now(), task.mid, task.interval)
 
 
 async def checkSendReply(info: Info, task: ObTask, type_: comment.ResourceType):
     old_timestamp = task.last_update
-    now_timestamp = datetime.now()
     if int(old_timestamp) < int(info.timestamp):
+        logger.info("{}: New dynamic detacted. Create: {}, Content:{:<}".format(
+            task.tid, datetime.fromtimestamp(info.timestamp).strftime("%Y--%m--%d %H:%M:%S"), info.content))
         resp = ""
         if task.callback_str == "":
             reply = task.reply
         else:
             reply = task.callback(info)
         try:
+            logger.info("{}: Send commnet. Type: {}, Contnet:{}".format(
+                task.tid, task.type, reply))
             resp = await comment.send_comment(reply, oid=info.vid, type_=type_, credential=settings.credit)
-            message = "Time: {}\nInfo: {}\nLast Post: {}\nMy Reply: {}".format(
-                now_timestamp, resp["success_toast"], info.content.replace("\n", " "), reply.replace("\n", " "))
+            logger.info("{}: Response. Toast: {:<}".format(
+                task.tid, resp["success_toast"]))
         except Exception as e:
-            print(e)
-        task.last_update = info.timestamp
-        # tasks
-        return True, message
+            logger.warning(e)
+
+        if not DEBUGMODE:
+            task.last_update = info.timestamp
+            obts.saveTask()
+
+        logger.info("{}: Pushing to wx.".format(task.tid))
+        settings.wxpusher.push(replyTemplate(info, reply))
+
+        return
     else:
-        message = now_timestamp, "|", info[2].replace("\n", " ")[
-            :10], "| 没有更新的动态"
-        return False, message
+        logger.info("{}: Nothing happend.".format(task.tid))
+        return
 
 
 async def loadVideos(user: user.User):
     page = await user.get_videos(0)
     videos = page["list"]["vlist"]
     if len(videos[0]) == 0:
+        logger.info("No newer video.")
         return Info(0, 0, 0)  # timestamp=0 永远不会回复
     vid = videos[0]["aid"]
     timestamp = videos[0]["created"]
     content = videos[0]["title"]  # use title
-    return Info(vid, timestamp, content)
+    description = videos[0]["description"]
+    uname = await user.get_user_info()
+    return Info(vid, timestamp, content, description, uname=uname["name"])
 
 
-async def startOb(task: ObTask):
-    while start_flag:
-        await loadDynamic(task)
-        time.sleep(task.interval)
+async def loadDynamics(user: user.User):
+    page = await user.get_dynamics(0)
+    if "cards" in page:
+        dynamic = page["cards"][0]
+        did = dynamic["desc"]["dynamic_id"]
+        timestamp = dynamic["desc"]["timestamp"]
+        if dynamic["desc"]["type"] == 2:
+            content = dynamic["card"]["item"]["description"]
+        else:
+            content = dynamic["card"]["item"]["content"]
+        uname = dynamic["card"]["user"]["uname"]
+        return Info(did, timestamp, content, uname=uname)
 
-
-async def main():
-    # for obt in obts.tasks:
-    #     await startOb(obt)
-    obt = obts.tasks[0]
-    await startOb(obt)
+    else:
+        logger.info("No newer dynamic.")
+        return Info(0, 0, 0)  # timestamp=0 永远不会回复
 
 
 if __name__ == "__main__":
     start_flag = True
     obts = ObTasks()
-
-    asyncio.get_event_loop().run_until_complete(main())
+    tasks = [asyncio.ensure_future(startTask(obt)) for obt in obts.tasks]
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.wait(tasks))
+    # for task in tasks:
+    #     print('Task ret: ', task.result())

@@ -1,12 +1,6 @@
-- callback: cb1
-  interval: 60
-  last_update: 0
-  mid: '8372874'
-  reply: '2128809385'
-  type: video
-- callback: cb1
-  interval: 60
-  last_update: 0
+- callback: ''
+  interval: 20
+  last_update: 1635323464
   mid: '693737'
-  reply: '2128809385'
+  reply: hello bro
   type: dynamic

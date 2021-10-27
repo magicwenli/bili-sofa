@@ -7,11 +7,16 @@ settings_path = "./settings.yaml"
 
 
 class ObTask:
-    def __init__(self, mid, type, callback, reply, last_update=0, interval=60) -> None:
+    def __init__(self,tid, mid, type, callback, reply, last_update=0, interval=60) -> None:
+        self.tid = tid
         self.mid = mid
         self.type = type
-        self.callback = eval(callback)
-        self.callback_str = callback
+        if callback is None:
+            self.callback=None
+            self.callback_str=""
+        else:
+            self.callback = eval(callback)
+            self.callback_str = callback
         self.reply = reply
         self.last_update = last_update
         self.interval = interval
@@ -30,11 +35,12 @@ class ObTask:
 
 class ObTasks:
     tasks: list[ObTask] = []
-
+    _tid=0
     def __init__(self) -> None:
         tasks = loadTasks()
         for task in tasks:
-            self.tasks.append(ObTask(**task))
+            self.tasks.append(ObTask(tid = self._tid,**task))
+            self._tid+=1
 
     def saveTask(self):
         tasks = []
