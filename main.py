@@ -6,6 +6,7 @@ from datetime import datetime
 import asyncio
 import random
 from log import logger
+from exceptions import PraseDynamicInfoException
 
 DEBUGMODE = False
 
@@ -75,15 +76,20 @@ async def loadVideos(user: user.User):
 async def loadDynamics(user: user.User):
     page = await user.get_dynamics(0)
     if "cards" in page:
-        dynamic = page["cards"][0]
-        did = dynamic["desc"]["dynamic_id"]
-        timestamp = dynamic["desc"]["timestamp"]
-        if dynamic["desc"]["type"] == 2:
-            content = dynamic["card"]["item"]["description"]
-        else:
-            content = dynamic["card"]["item"]["content"]
-        uname = dynamic["card"]["user"]["name"]
-        return Info(did, timestamp, content, uname=uname)
+        try:
+            dynamic = page["cards"][0]
+            did = dynamic["desc"]["dynamic_id"]
+            timestamp = dynamic["desc"]["timestamp"]
+            if dynamic["desc"]["type"] == 2:
+                content = dynamic["card"]["item"]["description"]
+                uname = dynamic["card"]["user"]["name"]
+            else:
+                content = dynamic["card"]["item"]["content"]
+                uname = dynamic["card"]["user"]["uname"]
+            return Info(did, timestamp, content, uname=uname)
+
+        except KeyError:
+            raise PraseDynamicInfoException()
 
     else:
         logger.info("No newer dynamic.")
