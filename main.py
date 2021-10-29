@@ -55,7 +55,7 @@ async def checkSendReply(info: Info, task: ObTask, type_: comment.ResourceType):
 
         return
     else:
-        logger.info("{}: Nothing happend.".format(task.tid))
+        logger.info("{}: Nothing happend. Last Update: {}".format(task.tid,task.getLastUpdate()))
         return
 
 

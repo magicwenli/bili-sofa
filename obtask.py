@@ -2,6 +2,7 @@ import yaml
 from callback import *
 from bilibili_api import user
 from config import settings
+import datetime
 
 settings_path = "./settings.yaml"
 
@@ -32,6 +33,11 @@ class ObTask:
             "interval": self.interval,
         }
 
+    def getLastUpdate(self):
+        dateArray = datetime.datetime.utcfromtimestamp(self.last_update)
+        dateArray = dateArray+datetime.timedelta(hours=8)
+        otherStyleTime = dateArray.strftime("%Y-%m-%d %H:%M:%S")
+        return otherStyleTime
 
 class ObTasks:
     tasks: list[ObTask] = []

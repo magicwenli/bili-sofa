@@ -10,8 +10,13 @@ def setup_applevel_logger(logger_name = APP_LOGGER_NAME, file_name=None):
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     sh = logging.StreamHandler(sys.stdout)
     sh.setFormatter(formatter)
+    fh = logging.FileHandler("ob.log")
+    fh.setFormatter(formatter)
+
     logger.handlers.clear()
     logger.addHandler(sh)
+    logger.addHandler(fh)
+
     if file_name:
         fh = logging.FileHandler(file_name)
         fh.setFormatter(formatter)
